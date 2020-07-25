@@ -80,9 +80,13 @@ impl FlightService for BallistaFlightService {
         println!("do_get: {:?}", action);
         match &action {
             physical_plan::Action::Execute(task) => {
+
+                // TODO get from config
+                let max_concurrent_tasks = 4;
+
                 {
                     let mut counter = self.concurrent_tasks.lock().unwrap();
-                    if counter.counter > 4 {
+                    if counter.counter > max_concurrent_tasks {
                         return Err(Status::resource_exhausted("too many concurrent tasks"));
                     }
                     counter.counter += 1;
