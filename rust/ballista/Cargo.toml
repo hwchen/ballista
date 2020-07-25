@@ -31,7 +31,6 @@ async-trait = "0.1.36"
 random-fast-rng = "0.1.1"
 structopt = "0.3"
 etcd-client = "0.5"
-atomic_counter = "1.0.1"
 
 # Ballista 0.3.x releases depend on the officla Arrow 1.0.0 release
 arrow = "1.0.0"
