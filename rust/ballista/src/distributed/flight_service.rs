@@ -33,6 +33,10 @@ use crate::flight::{
 use futures::{Stream, StreamExt};
 use tonic::{Request, Response, Status, Streaming};
 
+struct Counter {
+    counter: usize,
+}
+
 /// Service implementing the Apache Arrow Flight Protocol
 #[derive(Clone)]
 pub struct BallistaFlightService {
@@ -40,6 +44,7 @@ pub struct BallistaFlightService {
     executor: Arc<dyn Executor>,
     /// Results cache
     results_cache: Arc<Mutex<HashMap<String, ShufflePartition>>>,
+    concurrent_tasks: Arc<Mutex<Counter>>,
 }
 
 impl BallistaFlightService {
@@ -47,6 +52,7 @@ impl BallistaFlightService {
         Self {
             executor,
             results_cache: Arc::new(Mutex::new(HashMap::new())),
+            concurrent_tasks: Arc::new(Mutex::new(Counter { counter: 0 })),
         }
     }
 }
@@ -74,6 +80,14 @@ impl FlightService for BallistaFlightService {
         println!("do_get: {:?}", action);
         match &action {
             physical_plan::Action::Execute(task) => {
+                {
+                    let mut counter = self.concurrent_tasks.lock().unwrap();
+                    if counter.counter > 4 {
+                        return Err(Status::resource_exhausted("too many concurrent tasks"));
+                    }
+                    counter.counter += 1;
+                }
+
                 let _shuffle_id = self
                     .executor
                     .do_task(task)
@@ -102,6 +116,14 @@ impl FlightService for BallistaFlightService {
                 flights.append(&mut batches);
 
                 let output = futures::stream::iter(flights);
+
+                {
+                    let mut counter = self.concurrent_tasks.lock().unwrap();
+                    if counter.counter > 0 {
+                        counter.counter -= 1;
+                    }
+                }
+
                 Ok(Response::new(Box::pin(output) as Self::DoGetStream))
             }
             physical_plan::Action::FetchShuffle(shuffle_id) => {

@@ -305,11 +305,8 @@ pub async fn execute_job(job: &Job, ctx: Arc<dyn ExecutionContext>) -> Result<Ve
 
                             let ctx = ctx.clone();
                             let handle = thread::spawn(move || {
-                                println!("in thread");
                                 smol::run(async {
-                                    println!("in smol::run");
                                     Task::blocking(async move {
-                                        println!("in Task::blocking");
                                         ctx.execute_task(executor_id.clone(), task).await
                                     })
                                     .await
