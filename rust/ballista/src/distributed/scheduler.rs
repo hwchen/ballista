@@ -308,7 +308,7 @@ pub async fn execute_job(job: &Job, ctx: Arc<dyn ExecutionContext>) -> Result<Ve
                                 println!("in thread");
                                 smol::run(async {
                                     println!("in smol::run");
-                                    Task::blocking(async move {
+                                    Task::spawn(async move {
                                         println!("in Task::blocking");
                                         ctx.execute_task(executor_id.clone(), task).await
                                     })

@@ -58,7 +58,7 @@ pub fn start_etcd_thread(
                     }
                     Err(e) => println!("Failed to connect to etcd {:?}", e.to_string()),
                 }
-                Timer::after(Duration::from_secs(15)).await;
+                Timer::new(Duration::from_secs(15)).await;
             }
         });
     });

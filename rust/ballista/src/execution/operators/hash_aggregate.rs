@@ -620,7 +620,7 @@ impl ColumnarBatchIter for HashAggregateIter {
 
     async fn next(&self) -> Result<Option<ColumnarBatch>> {
         let channel = self.rx.clone();
-        Task::blocking(async move {
+        Task::spawn(async move {
             channel
                 .recv()
                 .map_err(|e| BallistaError::General(format!("{:?}", e.to_string())))?

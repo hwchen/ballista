@@ -222,6 +222,6 @@ impl ColumnarBatchIter for ParquetBatchIter {
 
     async fn next(&self) -> Result<Option<ColumnarBatch>> {
         let channel = self.response_rx.clone();
-        Task::blocking(async move { channel.recv().unwrap() }).await
+        Task::spawn(async move { channel.recv().unwrap() }).await
     }
 }
