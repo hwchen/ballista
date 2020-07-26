@@ -26,7 +26,7 @@ use crate::datafusion::logicalplan::LogicalPlan;
 use crate::datafusion::logicalplan::{Expr, LogicalPlanBuilder};
 use crate::datafusion::optimizer::optimizer::OptimizerRule;
 use crate::distributed::client::execute_action;
-use crate::distributed::etcd::{etcd_get_executors, start_etcd_thread};
+use crate::distributed::etcd::{etcd_get_executors, start_etcd_task};
 use crate::distributed::k8s::k8s_get_executors;
 use crate::distributed::scheduler::{
     create_job, create_physical_plan, ensure_requirements, execute_job, ExecutionTask,
@@ -37,6 +37,7 @@ use crate::execution::physical_plan::{
 };
 
 use async_trait::async_trait;
+use smol::Task;
 use uuid::Uuid;
 
 #[derive(Debug, Clone)]
@@ -169,13 +170,19 @@ impl BallistaExecutor {
         match &config.discovery_mode {
             DiscoveryMode::Etcd => {
                 println!("Running in etcd mode");
-                start_etcd_thread(
-                    &config.etcd_urls,
-                    "default",
-                    &uuid,
-                    &config.host,
-                    config.port,
-                );
+                Task::spawn({
+                    let config = config.clone();
+                    async move {
+                        start_etcd_task(
+                            &config.etcd_urls,
+                            "default",
+                            &uuid,
+                            &config.host,
+                            config.port,
+                        ).await;
+                    }
+                })
+                .detach();
             }
             DiscoveryMode::Kubernetes => println!("Running in k8s mode"),
             DiscoveryMode::Standalone => println!("Running in standalone mode"),

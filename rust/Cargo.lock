@@ -283,7 +283,6 @@ dependencies = [
  "smol",
  "sqlparser",
  "structopt",
- "tokio 0.2.22",
  "tonic",
  "uuid 0.8.1",
 ]

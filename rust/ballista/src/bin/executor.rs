@@ -47,8 +47,7 @@ struct Opt {
     port: usize,
 }
 
-#[tokio::main]
-async fn main() -> Result<(), Box<dyn std::error::Error>> {
+fn main() -> Result<(), Box<dyn std::error::Error>> {
     let opt = Opt::from_args();
 
     let mode = match opt.mode {
@@ -71,13 +70,18 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let addr = format!("{}:{}", bind_host, port);
     let addr = addr.parse()?;
-    let executor: Arc<dyn Executor> = Arc::new(BallistaExecutor::new(config));
-    let service = BallistaFlightService::new(executor);
-    let server = FlightServiceServer::new(service);
-    println!(
-        "Ballista v{} Rust Executor listening on {:?}",
-        BALLISTA_VERSION, addr
-    );
-    Server::builder().add_service(server).serve(addr).await?;
-    Ok(())
+
+    smol::run(async {
+        // BallistaExecutor::new() may spawn an async task for etcd discovery
+        let executor: Arc<dyn Executor> = Arc::new(BallistaExecutor::new(config));
+
+        let service = BallistaFlightService::new(executor);
+        let server = FlightServiceServer::new(service);
+        println!(
+            "Ballista v{} Rust Executor listening on {:?}",
+            BALLISTA_VERSION, addr
+        );
+        Server::builder().add_service(server).serve(addr).await?;
+        Ok(())
+    })
 }
