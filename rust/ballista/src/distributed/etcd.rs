@@ -21,6 +21,7 @@ use crate::error::{ballista_error, Result};
 use crate::execution::physical_plan::ExecutorMeta;
 
 use etcd_client::{Client, GetOptions, PutOptions};
+use smol::Timer;
 use uuid::Uuid;
 
 /// Start a thread that will register the executor with etcd periodically
@@ -57,7 +58,7 @@ pub fn start_etcd_thread(
                     }
                     Err(e) => println!("Failed to connect to etcd {:?}", e.to_string()),
                 }
-                thread::sleep(Duration::from_secs(15));
+                Timer::after(Duration::from_secs(15)).await;
             }
         });
     });
